@@ -1,0 +1,71 @@
+resources:
+- name: exchange-councourse-resource
+  type: git
+  icon: github
+  source:
+    uri: {{source-code-resource-uri}}
+    branch: {{source-code-resource-branch}}
+    private_key: {{source-code-resource-private-key}}
+
+- name: version-resource
+  type: semver
+  icon: github
+  source:
+    driver: git
+    initial_version: 0.0.1
+    uri: {{source-code-resource-uri}}
+    branch: {{source-code-resource-branch}}
+    private_key: {{source-code-resource-private-key}}
+    file: version
+
+- name: docker-image-resource
+  type: docker-image
+  icon: docker
+  source: 
+    repository: {{docker-registry-uri}}
+    ca_certs: 
+    - domain: {{docker-domain}}
+      cert: {{docker-registry-ca-certs}}
+
+jobs:
+- name: build-and-publish-image
+  plan:
+  - get: exchange-councourse-resource
+    trigger: true
+  - get: version-resource
+    params: { pre: rc }
+  - put: docker-image-resource
+    params:
+      build: exchange-councourse-resource
+      build_args:
+        MAINTAINER: jdoe@example.org
+        BUILD: concourse-$BUILD_ID
+        VERSION: 1.0.0
+
+- name: increase-major-version
+  serial: true
+  plan:
+  - put: version-resource
+    params: { bump: major }
+
+- name: increase-minor-version
+  serial: true
+  plan:
+  - put: version-resource
+    params: { bump: minor }
+
+- name: increase-patch-version
+  serial: true
+  plan:
+  - put: version-resource
+    params: { bump: patch }
+
+groups:
+- name: build-and-publish
+  jobs:
+  - build-and-publish-image
+- name: version-management
+  jobs:
+  - increase-major-version
+  - increase-minor-version
+  - increase-patch-version

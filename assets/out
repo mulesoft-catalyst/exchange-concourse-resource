@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+set -e
+
+exec 3>&1 # make stdout available as fd 3 for the result
+exec 1>&2 # redirect all output to stderr for logging
+
+source=$1
+if [ -z "$source" ]; then
+  echo "usage: $0 <path/to/source>" >&2
+  exit 1
+fi
+
+echo "Concourse 'out' metadata"
+echo " - Using BUILD_ID: ${BUILD_ID}"
+echo " - Using BUILD_NAME: ${BUILD_NAME}"
+echo " - Using BUILD_JOB_NAME: ${BUILD_JOB_NAME}"
+echo " - Using BUILD_PIPELINE_NAME: ${BUILD_PIPELINE_NAME}"
+echo " - Using BUILD_PIPELINE_INSTANCE_VARS: ${BUILD_PIPELINE_INSTANCE_VARS}"
+echo " - Using BUILD_TEAM_NAME: ${BUILD_TEAM_NAME}"
+echo " - Using ATC_EXTERNAL_URL: ${ATC_EXTERNAL_URL}"
+
+printf "\n"
+
+payload=$(mktemp /tmp/exchange-concourse-resource-artifact.XXXXXX)
+
+cat > $payload <&0
+
+echo "   in - request: $(cat ${payload})"
+
+printf "\n"
+
+export URI=$(jq -r '.source.uri // ""' < $payload)
+export CLIENT_ID=$(jq -r '.source.client_id // ""' < $payload)
+export CLIENT_SECRET=$(jq -r '.source.client_secret // ""' < $payload)
+export GROUP_ID=$(jq -r '.source.group_id // ""' < $payload)
+export ARTIFACT_ID=$(jq -r '.source.artifact_id // ""' < $payload)
+
+if [ -z "${URI}" ]; then
+  echo "invalid payload (missing uri)"
+  exit 1
+fi
+
+if [ -z "${CLIENT_ID}" ]; then
+  echo "invalid payload (missing client_id)"
+  exit 1
+fi
+
+if [ -z "${CLIENT_SECRET}" ]; then
+  echo "invalid payload (missing client_secret)"
+  exit 1
+fi
+
+if [ -z "${GROUP_ID}" ]; then
+  echo "invalid payload (missing group_id)"
+  exit 1
+fi
+
+if [ -z "${ARTIFACT_ID}" ]; then
+  echo "invalid payload (missing artifact_id)"
+  exit 1
+fi
+
+VERSION=$(cat ${source}/version-resource/number)
+BINARY=$(ls ${source}/build-and-test-output/${ARTIFACT_ID}-${VERSION}*.jar)
+REV=$(cut -d- -f3 <<< $(echo $BINARY|rev) | rev)
+
+echo "Exchange Concourse Resource 'out' settings"
+echo " - Using URI: ${URI}"
+echo " - Using CLIENT_ID: ${CLIENT_ID}"
+echo " - Using CLIENT_SECRET: ****************"
+echo " - Using GROUP_ID: ${GROUP_ID}"
+echo " - Using ARTIFACT_ID: ${ARTIFACT_ID}"
+echo " - Using VERSION: ${VERSION}"
+echo " - Using REVISION: ${REV}"
+
+printf "\n"
+
+source $(dirname $0)/api.sh
+
+get_token_for_connected_app "${CLIENT_ID}" "${CLIENT_SECRET}" "${URI}"
+
+printf "\n"
+
+publish_application_asset_to_exchange "${URI}" "${GROUP_ID}" "${ARTIFACT_ID}" "${VERSION}-${REV}" "${BINARY}"
+
+out="{ \
+  \"version\": { \"ref\": \"${VERSION}-${REV}\" }, \
+  \"metadata\": [ \
+    { \"name\": \"group_id\", \"value\": \"${GROUP_ID}\"}, \
+    { \"name\": \"artifact_id\", \"value\": \"${ARTIFACT_ID}\" } \
+  ] \
+}"
+
+echo "  out - response: ${out}"
+
+printf "${out}" >&3

@@ -1,0 +1,7 @@
+# Source
+source-code-resource-uri: <source-code-resource-uri>
+source-code-resource-branch: <source-code_resource_branch>
+
+# Docker
+docker-domain: <docker-registry-domain>
+docker-registry-uri: <docker-registry-uri>
