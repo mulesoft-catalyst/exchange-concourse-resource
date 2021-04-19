@@ -1,0 +1,4 @@
+local-dev/*
+*-local.yml
+credentials.yml
+properties.yml
