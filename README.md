@@ -308,7 +308,7 @@ building and publishing this custom Concourse Resource Type image to a Docker re
 
 ## Example Pipelines
 
-See [mule-concourse-pipeline-example](https://github.com/mulesoft-consulting/mule-concourse-pipeline-example/) for 
+See [mule-concourse-pipeline-example](https://github.com/mulesoft-catalyst/mule-concourse-pipeline-example/) for 
 pipeline examples for **Mule 4** applications.
 
 
