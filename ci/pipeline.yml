@@ -1,5 +1,5 @@
 resources:
-- name: exchange-councourse-resource
+- name: exchange-concourse-resource
   type: git
   icon: github
   source:
@@ -30,13 +30,13 @@ resources:
 jobs:
 - name: build-and-publish-image
   plan:
-  - get: exchange-councourse-resource
+  - get: exchange-concourse-resource
     trigger: true
   - get: version-resource
     params: { pre: rc }
   - put: docker-image-resource
     params:
-      build: exchange-councourse-resource
+      build: exchange-concourse-resource
       build_args:
         MAINTAINER: jdoe@example.org
         BUILD: concourse-$BUILD_ID

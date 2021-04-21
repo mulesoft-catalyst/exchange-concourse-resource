@@ -14,7 +14,7 @@ for building and publishing the Docker image containing this custom Concourse Re
 
 |No.|Name|Type|Description
 |---|---|---|---
-|1|**exchange-councourse-resource**|git|Reference to this git repository
+|1|**exchange-concourse-resource**|git|Reference to this git repository
 |3|**version-resource**|semver|Semver versioning support (git driver)
 |4|**docker-image-resource**|docker-image|Docker image resource
 
